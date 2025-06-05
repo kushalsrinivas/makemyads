@@ -11,7 +11,6 @@ import {
   Grid3X3,
   List,
   Edit,
-  Rocket,
   Copy,
   Trash2,
   ArrowLeft,
@@ -19,99 +18,85 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-const draftCreatives = [
+const savedCreatives = [
   {
     id: 1,
-    title: "Summer Sneaker Campaign",
-    product: "Athletic Sneakers",
-    thumbnail: "👟",
-    status: "Published",
-    campaign: "Summer Sale",
+    title: "Summer Breeze Linen Shirt",
+    template: "Carousel for Instagram",
+    theme: "Summer Vibes",
+    tone: "Playful",
+    thumbnail: "👕",
     dateCreated: "2024-01-15",
-    performance: "+24%",
-    tags: ["Top Seller", "Summer", "Athletic"],
+    hook: "☀️ Summer Essential Alert!",
+    copy: "Ultra-lightweight linen that keeps you cool even on the hottest days.",
   },
   {
     id: 2,
-    title: "New Arrivals Push",
-    product: "Athletic Shorts",
-    thumbnail: "🩳",
-    status: "Draft",
-    campaign: "New Products",
+    title: "Minimalist Watch Collection",
+    template: "Product Drop Announcement",
+    theme: "Minimal Aesthetic",
+    tone: "Premium",
+    thumbnail: "⌚",
     dateCreated: "2024-01-14",
-    performance: "—",
-    tags: ["New Arrival", "Athletic"],
+    hook: "Timeless Design. Unparalleled Craftsmanship.",
+    copy: "Introducing our new collection of minimalist watches designed for the modern individual.",
   },
   {
     id: 3,
-    title: "Premium Sunglasses Ad",
-    product: "Designer Sunglasses",
-    thumbnail: "🕶️",
-    status: "Published",
-    campaign: "Premium Collection",
+    title: "Organic Skincare Set",
+    template: "UGC-style Testimonial",
+    theme: "Nature Inspired",
+    tone: "Friendly",
+    thumbnail: "🧴",
     dateCreated: "2024-01-13",
-    performance: "+18%",
-    tags: ["Premium", "Accessories"],
+    hook: "My skin has never felt better! ✨",
+    copy: "I've been using this organic skincare set for just 2 weeks and the difference is incredible!",
   },
   {
     id: 4,
-    title: "Clearance Event",
-    product: "Winter Jackets",
+    title: "Winter Collection Clearance",
+    template: "Clearance Countdown",
+    theme: "Festive Launch",
+    tone: "Bold",
     thumbnail: "🧥",
-    status: "Completed",
-    campaign: "Inventory Clear",
     dateCreated: "2024-01-12",
-    performance: "+31%",
-    tags: ["Clearance", "Winter"],
-  },
-  {
-    id: 5,
-    title: "Back to School",
-    product: "Backpacks",
-    thumbnail: "🎒",
-    status: "Draft",
-    campaign: "Education",
-    dateCreated: "2024-01-11",
-    performance: "—",
-    tags: ["Seasonal", "Education"],
-  },
-  {
-    id: 6,
-    title: "Fitness Gear Promo",
-    product: "Workout Equipment",
-    thumbnail: "🏋️",
-    status: "Published",
-    campaign: "Fitness Focus",
-    dateCreated: "2024-01-10",
-    performance: "+15%",
-    tags: ["Fitness", "Equipment"],
+    hook: "FINAL 48 HOURS: UP TO 70% OFF!",
+    copy: "Last chance to grab our premium winter collection at unbelievable prices. When it's gone, it's gone!",
   },
 ];
 
 export default function LibraryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [creatives, setCreatives] = useState(savedCreatives);
 
-  const filteredCreatives = draftCreatives.filter((creative) => {
-    const matchesSearch =
+  const filteredCreatives = creatives.filter((creative) => {
+    return (
       creative.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      creative.product.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter =
-      filterStatus === "all" || creative.status.toLowerCase() === filterStatus;
-    return matchesSearch && matchesFilter;
+      creative.template.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      creative.theme.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      creative.tone.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Published":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "Draft":
-        return "bg-gray-100 text-gray-800 border-gray-200";
-      case "Completed":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+  const handleDelete = (id: number) => {
+    if (confirm("Are you sure you want to delete this creative?")) {
+      setCreatives(creatives.filter((creative) => creative.id !== id));
+    }
+  };
+
+  const handleDuplicate = (id: number) => {
+    const creativeToDuplicate = creatives.find(
+      (creative) => creative.id === id
+    );
+    if (creativeToDuplicate) {
+      const newCreative = {
+        ...creativeToDuplicate,
+        id: Math.max(...creatives.map((c) => c.id)) + 1,
+        title: `${creativeToDuplicate.title} (Copy)`,
+        dateCreated: new Date().toISOString().split("T")[0],
+      };
+      setCreatives([...creatives, newCreative]);
     }
   };
 
@@ -121,10 +106,10 @@ export default function LibraryPage() {
       <header className="border-b border-white/20 backdrop-blur-sm bg-white/30">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <Link href="/dashboard">
+            <Link href="/">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
+                Back to Home
               </Button>
             </Link>
             <div className="flex items-center space-x-2">
@@ -132,15 +117,15 @@ export default function LibraryPage() {
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <span className="text-xl font-semibold text-gray-900">
-                Creative Library
+                My Ad Library
               </span>
             </div>
           </div>
 
-          <Link href="/dashboard">
+          <Link href="/create">
             <Button className="bg-gradient-to-r from-orange-500 to-purple-600 hover:from-orange-600 hover:to-purple-700 text-white">
               <Plus className="w-4 h-4 mr-2" />
-              Create New
+              Create New Ad
             </Button>
           </Link>
         </div>
@@ -159,44 +144,32 @@ export default function LibraryPage() {
             />
           </div>
 
-          <div className="flex items-center space-x-4">
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-2 bg-white/60 backdrop-blur-sm border border-white/20 rounded-md text-gray-700"
+          <div className="flex items-center bg-white/60 backdrop-blur-sm border border-white/20 rounded-md p-1">
+            <Button
+              variant={viewMode === "grid" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("grid")}
+              className="h-8 w-8 p-0"
             >
-              <option value="all">All Status</option>
-              <option value="published">Published</option>
-              <option value="draft">Draft</option>
-              <option value="completed">Completed</option>
-            </select>
-
-            <div className="flex items-center bg-white/60 backdrop-blur-sm border border-white/20 rounded-md p-1">
-              <Button
-                variant={viewMode === "grid" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("grid")}
-                className="h-8 w-8 p-0"
-              >
-                <Grid3X3 className="w-4 h-4" />
-              </Button>
-              <Button
-                variant={viewMode === "list" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("list")}
-                className="h-8 w-8 p-0"
-              >
-                <List className="w-4 h-4" />
-              </Button>
-            </div>
+              <Grid3X3 className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={viewMode === "list" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("list")}
+              className="h-8 w-8 p-0"
+            >
+              <List className="w-4 h-4" />
+            </Button>
           </div>
         </div>
 
         {/* Results Count */}
         <div className="mb-6">
           <p className="text-gray-600">
-            Showing {filteredCreatives.length} of {draftCreatives.length}{" "}
-            creatives
+            {filteredCreatives.length}{" "}
+            {filteredCreatives.length === 1 ? "creative" : "creatives"} in your
+            library
           </p>
         </div>
 
@@ -212,7 +185,7 @@ export default function LibraryPage() {
                   {/* Thumbnail */}
                   <div className="bg-gradient-to-br from-orange-100 to-purple-100 rounded-lg p-6 mb-4 text-center">
                     <div className="text-4xl mb-2">{creative.thumbnail}</div>
-                    <p className="text-sm text-gray-600">{creative.product}</p>
+                    <p className="text-sm text-gray-600">{creative.template}</p>
                   </div>
 
                   {/* Content */}
@@ -221,44 +194,23 @@ export default function LibraryPage() {
                       <h3 className="font-semibold text-gray-900 text-sm leading-tight">
                         {creative.title}
                       </h3>
-                      <Badge
-                        className={`text-xs ${getStatusColor(creative.status)}`}
-                      >
-                        {creative.status}
+                      <Badge className="text-xs bg-gradient-to-r from-orange-100 to-purple-100 text-gray-700 border-0">
+                        {creative.tone}
                       </Badge>
                     </div>
 
-                    <div className="flex flex-wrap gap-1">
-                      {creative.tags.slice(0, 2).map((tag, index) => (
-                        <Badge
-                          key={index}
-                          variant="outline"
-                          className="text-xs bg-white/50"
-                        >
-                          {tag}
-                        </Badge>
-                      ))}
-                      {creative.tags.length > 2 && (
-                        <Badge
-                          variant="outline"
-                          className="text-xs bg-white/50"
-                        >
-                          +{creative.tags.length - 2}
-                        </Badge>
-                      )}
-                    </div>
+                    <p className="text-sm font-medium text-gray-800">
+                      {creative.hook}
+                    </p>
+                    <p className="text-xs text-gray-600 line-clamp-2">
+                      {creative.copy}
+                    </p>
 
                     <div className="flex items-center justify-between text-xs text-gray-500">
+                      <Badge variant="outline" className="text-xs bg-white/50">
+                        {creative.theme}
+                      </Badge>
                       <span>{creative.dateCreated}</span>
-                      <span
-                        className={
-                          creative.performance !== "—"
-                            ? "text-green-600 font-medium"
-                            : ""
-                        }
-                      >
-                        {creative.performance}
-                      </span>
                     </div>
 
                     {/* Actions */}
@@ -275,6 +227,7 @@ export default function LibraryPage() {
                           variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0"
+                          onClick={() => handleDuplicate(creative.id)}
                         >
                           <Copy className="w-4 h-4" />
                         </Button>
@@ -282,19 +235,19 @@ export default function LibraryPage() {
                           variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                          onClick={() => handleDelete(creative.id)}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
-                      {creative.status === "Draft" && (
+                      <Link href={`/generate?id=${creative.id}`}>
                         <Button
                           size="sm"
                           className="bg-gradient-to-r from-orange-500 to-purple-600 text-white h-8 px-3"
                         >
-                          <Rocket className="w-3 h-3 mr-1" />
-                          Publish
+                          View
                         </Button>
-                      )}
+                      </Link>
                     </div>
                   </div>
                 </CardContent>
@@ -321,73 +274,46 @@ export default function LibraryPage() {
                             {creative.title}
                           </h3>
                           <p className="text-sm text-gray-600">
-                            {creative.product} • {creative.campaign}
+                            {creative.template} • {creative.theme}
                           </p>
                           <div className="flex items-center space-x-2 mt-1">
-                            {creative.tags.slice(0, 3).map((tag, index) => (
-                              <Badge
-                                key={index}
-                                variant="outline"
-                                className="text-xs bg-white/50"
-                              >
-                                {tag}
-                              </Badge>
-                            ))}
+                            <Badge className="text-xs bg-gradient-to-r from-orange-100 to-purple-100 text-gray-700 border-0">
+                              {creative.tone}
+                            </Badge>
+                            <span className="text-xs text-gray-500">
+                              {creative.dateCreated}
+                            </span>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-6">
-                        <div className="text-right">
-                          <Badge
-                            className={`${getStatusColor(
-                              creative.status
-                            )} text-xs`}
-                          >
-                            {creative.status}
-                          </Badge>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {creative.dateCreated}
-                          </p>
-                        </div>
-
-                        <div className="text-right">
-                          <p
-                            className={`text-sm font-medium ${
-                              creative.performance !== "—"
-                                ? "text-green-600"
-                                : "text-gray-500"
-                            }`}
-                          >
-                            {creative.performance}
-                          </p>
-                          <p className="text-xs text-gray-500">Performance</p>
-                        </div>
-
-                        <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="sm">
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Copy className="w-4 h-4" />
-                          </Button>
-                          {creative.status === "Draft" && (
-                            <Button
-                              size="sm"
-                              className="bg-gradient-to-r from-orange-500 to-purple-600 text-white"
-                            >
-                              <Rocket className="w-4 h-4 mr-1" />
-                              Publish
-                            </Button>
-                          )}
+                      <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button variant="ghost" size="sm">
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDuplicate(creative.id)}
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                        <Link href={`/generate?id=${creative.id}`}>
                           <Button
-                            variant="ghost"
                             size="sm"
-                            className="text-red-500 hover:text-red-700"
+                            className="bg-gradient-to-r from-orange-500 to-purple-600 text-white"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            View
                           </Button>
-                        </div>
+                        </Link>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:text-red-700"
+                          onClick={() => handleDelete(creative.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -408,13 +334,14 @@ export default function LibraryPage() {
                 No creatives found
               </h3>
               <p className="text-gray-600 mb-6">
-                Try adjusting your search terms or filters to find what you're
-                looking for.
+                {searchTerm
+                  ? "Try adjusting your search terms to find what you're looking for."
+                  : "Create your first ad to get started."}
               </p>
-              <Link href="/dashboard">
+              <Link href="/create">
                 <Button className="bg-gradient-to-r from-orange-500 to-purple-600 hover:from-orange-600 hover:to-purple-700 text-white">
                   <Plus className="w-4 h-4 mr-2" />
-                  Create New Creative
+                  Create New Ad
                 </Button>
               </Link>
             </CardContent>
