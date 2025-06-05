@@ -120,6 +120,9 @@ export default function CreatePage() {
   const [selectedTheme, setSelectedTheme] = useState("");
   const [selectedTone, setSelectedTone] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [customTheme, setCustomTheme] = useState("");
+  const [customTone, setCustomTone] = useState("");
+  const [customTemplate, setCustomTemplate] = useState("");
   const [uploadedImages, setUploadedImages] = useState<
     { url: string; timestamp: number }[]
   >([]);
@@ -135,6 +138,9 @@ export default function CreatePage() {
       setSelectedTheme(data.selectedTheme || "");
       setSelectedTone(data.selectedTone || "");
       setSelectedTemplate(data.selectedTemplate || "");
+      setCustomTheme(data.customTheme || "");
+      setCustomTone(data.customTone || "");
+      setCustomTemplate(data.customTemplate || "");
       setUploadedImages(data.uploadedImages || []);
     }
   }, []);
@@ -147,6 +153,9 @@ export default function CreatePage() {
       selectedTheme,
       selectedTone,
       selectedTemplate,
+      customTheme,
+      customTone,
+      customTemplate,
       uploadedImages: uploadedImages.map((image) => image.url),
     };
     localStorage.setItem("adCreationData", JSON.stringify(data));
@@ -156,6 +165,9 @@ export default function CreatePage() {
     selectedTheme,
     selectedTone,
     selectedTemplate,
+    customTheme,
+    customTone,
+    customTemplate,
     uploadedImages,
   ]);
 
@@ -190,11 +202,20 @@ export default function CreatePage() {
           uploadedImages.length > 0
         );
       case 2:
-        return selectedTheme !== "";
+        return (
+          selectedTheme !== "" &&
+          (selectedTheme !== "Custom" || customTheme.trim() !== "")
+        );
       case 3:
-        return selectedTone !== "";
+        return (
+          selectedTone !== "" &&
+          (selectedTone !== "Custom" || customTone.trim() !== "")
+        );
       case 4:
-        return selectedTemplate !== "";
+        return (
+          selectedTemplate !== "" &&
+          (selectedTemplate !== "Custom" || customTemplate.trim() !== "")
+        );
       case 5:
         return true; // Review step is always proceedable
       default:
@@ -412,7 +433,36 @@ export default function CreatePage() {
                         </p>
                       </button>
                     ))}
+                    <button
+                      type="button"
+                      className={`w-full text-left cursor-pointer transition-all hover:shadow-lg ${
+                        selectedTheme === "Custom"
+                          ? "ring-2 ring-orange-500 bg-gradient-to-br from-orange-50 to-purple-50"
+                          : "bg-white/60 backdrop-blur-sm border border-white/20"
+                      } rounded-lg p-4`}
+                      onClick={() => setSelectedTheme("Custom")}
+                    >
+                      <div className="w-12 h-12 bg-gradient-to-r from-gray-400 to-gray-600 rounded-lg mb-4 flex items-center justify-center">
+                        <Sparkles className="w-6 h-6 text-white" />
+                      </div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                        Custom Theme
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        Create your own unique style
+                      </p>
+                    </button>
                   </div>
+                  {selectedTheme === "Custom" && (
+                    <div className="mt-6">
+                      <Textarea
+                        placeholder="Describe your custom theme (e.g., 'mid-century minimalist with Gen Z color palette')..."
+                        value={customTheme}
+                        onChange={(e) => setCustomTheme(e.target.value)}
+                        className="resize-none min-h-[100px]"
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -455,7 +505,36 @@ export default function CreatePage() {
                         </p>
                       </button>
                     ))}
+                    <button
+                      type="button"
+                      className={`w-full text-left cursor-pointer transition-all hover:shadow-lg ${
+                        selectedTone === "Custom"
+                          ? "ring-2 ring-orange-500 bg-gradient-to-br from-orange-50 to-purple-50"
+                          : "bg-white/60 backdrop-blur-sm border border-white/20"
+                      } rounded-lg p-4`}
+                      onClick={() => setSelectedTone("Custom")}
+                    >
+                      <div className="w-12 h-12 bg-gradient-to-r from-gray-400 to-gray-600 rounded-lg mb-4 flex items-center justify-center">
+                        <Sparkles className="w-6 h-6 text-white" />
+                      </div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                        Custom Tone
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        Define your own unique voice
+                      </p>
+                    </button>
                   </div>
+                  {selectedTone === "Custom" && (
+                    <div className="mt-6">
+                      <Textarea
+                        placeholder="Describe your custom tone (e.g., 'inspirational but grounded')..."
+                        value={customTone}
+                        onChange={(e) => setCustomTone(e.target.value)}
+                        className="resize-none min-h-[100px]"
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -500,7 +579,36 @@ export default function CreatePage() {
                         </p>
                       </button>
                     ))}
+                    <button
+                      type="button"
+                      className={`w-full text-left cursor-pointer transition-all hover:shadow-lg ${
+                        selectedTemplate === "Custom"
+                          ? "ring-2 ring-orange-500 bg-gradient-to-br from-orange-50 to-purple-50"
+                          : "bg-white/60 backdrop-blur-sm border border-white/20"
+                      } rounded-lg p-4`}
+                      onClick={() => setSelectedTemplate("Custom")}
+                    >
+                      <div className="w-12 h-12 bg-gradient-to-r from-gray-400 to-gray-600 rounded-lg mb-4 flex items-center justify-center">
+                        <Sparkles className="w-6 h-6 text-white" />
+                      </div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                        Custom Template
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        Create your own unique format
+                      </p>
+                    </button>
                   </div>
+                  {selectedTemplate === "Custom" && (
+                    <div className="mt-6">
+                      <Textarea
+                        placeholder="Describe your custom template (e.g., 'influencer-style reel script')..."
+                        value={customTemplate}
+                        onChange={(e) => setCustomTemplate(e.target.value)}
+                        className="resize-none min-h-[100px]"
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -552,11 +660,24 @@ export default function CreatePage() {
                     <div className="space-y-2">
                       <p className="text-gray-600">
                         <span className="font-medium">Theme:</span>{" "}
-                        {selectedTheme}
+                        {selectedTheme === "Custom" ? (
+                          <>
+                            Custom:{" "}
+                            <span className="italic">{customTheme}</span>
+                          </>
+                        ) : (
+                          selectedTheme
+                        )}
                       </p>
                       <p className="text-gray-600">
                         <span className="font-medium">Tone:</span>{" "}
-                        {selectedTone}
+                        {selectedTone === "Custom" ? (
+                          <>
+                            Custom: <span className="italic">{customTone}</span>
+                          </>
+                        ) : (
+                          selectedTone
+                        )}
                       </p>
                     </div>
                   </div>
@@ -565,7 +686,16 @@ export default function CreatePage() {
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">
                       Template
                     </h3>
-                    <p className="text-gray-600">{selectedTemplate}</p>
+                    <p className="text-gray-600">
+                      {selectedTemplate === "Custom" ? (
+                        <>
+                          Custom:{" "}
+                          <span className="italic">{customTemplate}</span>
+                        </>
+                      ) : (
+                        selectedTemplate
+                      )}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
