@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
+import { env } from "@/env";
 
 // Input validation schema
 const generatePromptInput = z.object({
@@ -11,6 +12,13 @@ const generatePromptInput = z.object({
   customTheme: z.string().optional(),
   customTone: z.string().optional(),
   customTemplate: z.string().optional(),
+});
+
+// Input validation schema for image generation
+const generateImageInput = z.object({
+  prompt: z.string().min(1, "Prompt is required"),
+  aspectRatio: z.string().optional().default("4:5"),
+  numberOfImages: z.number().min(1).max(4).optional().default(3),
 });
 
 // Theme descriptions for better prompt generation
@@ -114,5 +122,100 @@ Style: photorealistic, high-quality, professional advertising photography, optim
         promptBreakdown,
         aiSettings,
       };
+    }),
+
+  generateImage: publicProcedure
+    .input(generateImageInput)
+    .mutation(async ({ input }) => {
+      try {
+        // Check if API key is configured
+        if (!env.GOOGLE_GEMINI_API_KEY) {
+          throw new Error("GOOGLE_GEMINI_API_KEY not configured");
+        }
+
+        // Use the Gemini API for image generation
+        const response = await fetch(
+          'https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:generateImages',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': env.GOOGLE_GEMINI_API_KEY,
+            },
+            body: JSON.stringify({
+              prompt: input.prompt,
+              config: {
+                numberOfImages: input.numberOfImages,
+                aspectRatio: input.aspectRatio,
+                safetyFilterLevel: "BLOCK_SOME",
+                personGeneration: "ALLOW_ADULT"
+              }
+            })
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Gemini API Error:', response.status, errorText);
+          throw new Error(`Gemini API request failed: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json() as {
+          generatedImages: Array<{
+            imageBytes: string;
+            raiFilteredReason?: string;
+          }>;
+        };
+
+        // Transform the response to match our expected format
+        const generatedImages = data.generatedImages
+          .filter(img => img.imageBytes && !img.raiFilteredReason) // Filter out blocked images
+          .map((image, index) => ({
+            id: `gemini_image_${index + 1}_${Date.now()}`,
+            url: `data:image/jpeg;base64,${image.imageBytes}`,
+            prompt: input.prompt,
+            aspectRatio: input.aspectRatio,
+            generatedAt: new Date().toISOString(),
+            isReal: true,
+          }));
+
+        if (generatedImages.length === 0) {
+          throw new Error("No images were generated - they may have been filtered for safety");
+        }
+
+        return {
+          images: generatedImages,
+          prompt: input.prompt,
+          aspectRatio: input.aspectRatio,
+          totalGenerated: generatedImages.length,
+          totalRequested: input.numberOfImages,
+          generatedAt: new Date().toISOString(),
+          source: "gemini-imagen",
+        };
+
+      } catch (error) {
+        console.error("Error in image generation:", error);
+        
+        // Return mock data for development/testing purposes
+        const mockImages = Array.from({ length: input.numberOfImages }, (_, index) => ({
+          id: `mock_image_${index + 1}_${Date.now()}`,
+          url: `https://picsum.photos/1024/1280?random=${Date.now() + index}`, // Placeholder service
+          prompt: input.prompt,
+          aspectRatio: input.aspectRatio,
+          generatedAt: new Date().toISOString(),
+          isMock: true,
+        }));
+
+        return {
+          images: mockImages,
+          prompt: input.prompt,
+          aspectRatio: input.aspectRatio,
+          totalGenerated: mockImages.length,
+          totalRequested: input.numberOfImages,
+          generatedAt: new Date().toISOString(),
+          note: `Using mock images. Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          source: "placeholder",
+        };
+      }
     }),
 }); 

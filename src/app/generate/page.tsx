@@ -16,8 +16,11 @@ import {
   Check,
   Copy,
   CheckCircle,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
+import { api } from "@/trpc/react";
+import Image from "next/image";
 
 // Mock data for the generated creative
 const mockCreative = {
@@ -55,13 +58,48 @@ export default function GeneratePage() {
     };
   } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [generatedImages, setGeneratedImages] = useState<
+    Array<{
+      id: string;
+      url: string;
+      prompt: string;
+      aspectRatio: string;
+      generatedAt: string;
+      isMock?: boolean;
+      isReal?: boolean;
+    }>
+  >([]);
+  const [isGeneratingImages, setIsGeneratingImages] = useState(false);
+
+  // Image generation mutation
+  const generateImages = api.ai.generateImage.useMutation({
+    onSuccess: (data) => {
+      setGeneratedImages(data.images);
+      setIsGeneratingImages(false);
+    },
+    onError: (error) => {
+      console.error("Failed to generate images:", error);
+      setIsGeneratingImages(false);
+    },
+  });
 
   useEffect(() => {
     // Load generated prompt data from localStorage
     const promptData = localStorage.getItem("generatedPrompt");
     if (promptData) {
       try {
-        setGeneratedPromptData(JSON.parse(promptData));
+        const parsedData = JSON.parse(promptData);
+        setGeneratedPromptData(parsedData);
+
+        // Start generating images with the prompt
+        if (parsedData.finalPrompt) {
+          setIsGeneratingImages(true);
+          generateImages.mutate({
+            prompt: parsedData.finalPrompt,
+            aspectRatio: parsedData.aiSettings?.aspectRatio || "4:5",
+            numberOfImages: 3,
+          });
+        }
       } catch (error) {
         console.error("Failed to parse generated prompt data:", error);
       }
@@ -72,7 +110,7 @@ export default function GeneratePage() {
       setIsGenerating(false);
     }, 3000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [generateImages.mutate]);
 
   const handleCopyPrompt = async () => {
     if (generatedPromptData?.finalPrompt) {
@@ -87,10 +125,14 @@ export default function GeneratePage() {
   };
 
   const handleRegenerate = () => {
-    setIsGenerating(true);
-    setTimeout(() => {
-      setIsGenerating(false);
-    }, 2000);
+    if (generatedPromptData?.finalPrompt) {
+      setIsGeneratingImages(true);
+      generateImages.mutate({
+        prompt: generatedPromptData.finalPrompt,
+        aspectRatio: generatedPromptData.aiSettings?.aspectRatio || "4:5",
+        numberOfImages: 3,
+      });
+    }
   };
 
   const handleSave = () => {
@@ -114,16 +156,16 @@ export default function GeneratePage() {
             </h2>
             <div className="space-y-3 text-left">
               <div className="flex items-center text-sm text-gray-600">
-                <div className="w-2 h-2 bg-green-400 rounded-full mr-3 animate-pulse"></div>
-                Analyzing your product images
+                <div className="w-2 h-2 bg-green-400 rounded-full mr-3 animate-pulse" />
+                Analyzing your product details
               </div>
               <div className="flex items-center text-sm text-gray-600">
-                <div className="w-2 h-2 bg-blue-400 rounded-full mr-3 animate-pulse"></div>
+                <div className="w-2 h-2 bg-blue-400 rounded-full mr-3 animate-pulse" />
                 Generating creative concept
               </div>
               <div className="flex items-center text-sm text-gray-600">
-                <div className="w-2 h-2 bg-purple-400 rounded-full mr-3 animate-pulse"></div>
-                Crafting persuasive copy
+                <div className="w-2 h-2 bg-purple-400 rounded-full mr-3 animate-pulse" />
+                Creating visual assets
               </div>
             </div>
           </CardContent>
@@ -180,8 +222,16 @@ export default function GeneratePage() {
           </div>
 
           <div className="flex items-center space-x-3">
-            <Button variant="outline" onClick={handleRegenerate}>
-              <RefreshCw className="w-4 h-4 mr-2" />
+            <Button
+              variant="outline"
+              onClick={handleRegenerate}
+              disabled={isGeneratingImages}
+            >
+              {isGeneratingImages ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4 mr-2" />
+              )}
               Regenerate
             </Button>
             <Button
@@ -204,58 +254,100 @@ export default function GeneratePage() {
                 {/* Template & Style Info */}
                 <div className="flex items-center justify-between mb-6">
                   <Badge className="bg-gradient-to-r from-orange-100 to-purple-100 text-gray-700 border-0">
-                    {mockCreative.template}
+                    {generatedPromptData?.promptBreakdown?.templateUsed ||
+                      mockCreative.template}
                   </Badge>
                   <div className="flex space-x-2">
-                    <Badge variant="outline">{mockCreative.theme}</Badge>
-                    <Badge variant="outline">{mockCreative.tone}</Badge>
+                    <Badge variant="outline">
+                      {generatedPromptData?.promptBreakdown?.themeUsed ||
+                        mockCreative.theme}
+                    </Badge>
+                    <Badge variant="outline">
+                      {generatedPromptData?.promptBreakdown?.toneUsed ||
+                        mockCreative.tone}
+                    </Badge>
                   </div>
                 </div>
 
                 {/* Visual Preview */}
-                <div className="bg-gradient-to-br from-orange-100 to-purple-100 rounded-xl p-8 mb-6 text-center">
-                  <div className="flex items-center justify-center space-x-4">
-                    <div className="w-16 h-16 bg-white/30 rounded-lg flex items-center justify-center">
-                      <ImageIcon className="w-8 h-8 text-gray-500" />
+                <div className="bg-gradient-to-br from-orange-100 to-purple-100 rounded-xl p-6 mb-6">
+                  {isGeneratingImages ? (
+                    <div className="text-center py-8">
+                      <Loader2 className="w-8 h-8 text-gray-500 animate-spin mx-auto mb-4" />
+                      <p className="text-sm text-gray-600">
+                        Generating images with Gemini AI...
+                      </p>
                     </div>
-                    <div className="w-16 h-16 bg-white/50 rounded-lg flex items-center justify-center border-2 border-orange-300">
-                      <ImageIcon className="w-8 h-8 text-gray-700" />
+                  ) : generatedImages.length > 0 ? (
+                    <div className="grid grid-cols-3 gap-3">
+                      {generatedImages.map((image, index) => (
+                        <div
+                          key={image.id}
+                          className="relative aspect-square rounded-lg overflow-hidden bg-white/50"
+                        >
+                          <Image
+                            src={image.url}
+                            alt={`Generated ad image ${index + 1}`}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          />
+                          {image.isMock ? (
+                            <div className="absolute top-2 right-2">
+                              <Badge variant="secondary" className="text-xs">
+                                Demo
+                              </Badge>
+                            </div>
+                          ) : image.isReal ? (
+                            <div className="absolute top-2 right-2">
+                              <Badge className="bg-green-500 text-white text-xs">
+                                AI Generated
+                              </Badge>
+                            </div>
+                          ) : null}
+                        </div>
+                      ))}
                     </div>
-                    <div className="w-16 h-16 bg-white/30 rounded-lg flex items-center justify-center">
-                      <ImageIcon className="w-8 h-8 text-gray-500" />
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="flex items-center justify-center space-x-4 mb-4">
+                        <div className="w-16 h-16 bg-white/30 rounded-lg flex items-center justify-center">
+                          <ImageIcon className="w-8 h-8 text-gray-500" />
+                        </div>
+                        <div className="w-16 h-16 bg-white/50 rounded-lg flex items-center justify-center border-2 border-orange-300">
+                          <ImageIcon className="w-8 h-8 text-gray-700" />
+                        </div>
+                        <div className="w-16 h-16 bg-white/30 rounded-lg flex items-center justify-center">
+                          <ImageIcon className="w-8 h-8 text-gray-500" />
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        AI-generated product visuals will appear here
+                      </p>
                     </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-4">
-                    AI-enhanced product visualization based on your uploaded
-                    images
-                  </p>
+                  )}
                 </div>
 
                 {/* Copy Preview */}
                 <div className="space-y-4">
                   <div>
                     <p className="text-sm font-medium text-gray-500 mb-1">
-                      Hook
+                      Product
                     </p>
                     <p className="text-xl font-semibold text-gray-900">
-                      {mockCreative.hook}
+                      {generatedPromptData?.promptBreakdown?.product ||
+                        mockCreative.productName}
                     </p>
                   </div>
 
                   <div>
                     <p className="text-sm font-medium text-gray-500 mb-1">
-                      Headline
+                      Description
                     </p>
-                    <p className="text-lg font-medium text-gray-900">
-                      {mockCreative.headline}
+                    <p className="text-gray-700">
+                      {generatedPromptData?.promptBreakdown?.description ||
+                        mockCreative.body}
                     </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-medium text-gray-500 mb-1">
-                      Body
-                    </p>
-                    <p className="text-gray-700">{mockCreative.body}</p>
                   </div>
 
                   <div>
@@ -270,18 +362,21 @@ export default function GeneratePage() {
                   {/* Tags */}
                   <div className="pt-4">
                     <p className="text-sm font-medium text-gray-500 mb-2">
-                      Tags
+                      Style
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {mockCreative.tags.map((tag) => (
-                        <Badge
-                          key={tag}
-                          variant="outline"
-                          className="bg-white/50"
-                        >
-                          {tag}
-                        </Badge>
-                      ))}
+                      <Badge variant="outline" className="bg-white/50">
+                        {generatedPromptData?.aiSettings?.style ||
+                          "Photorealistic"}
+                      </Badge>
+                      <Badge variant="outline" className="bg-white/50">
+                        {generatedPromptData?.aiSettings?.quality ||
+                          "High Quality"}
+                      </Badge>
+                      <Badge variant="outline" className="bg-white/50">
+                        {generatedPromptData?.aiSettings?.optimization ||
+                          "Social Media"}
+                      </Badge>
                     </div>
                   </div>
                 </div>
@@ -374,10 +469,14 @@ export default function GeneratePage() {
                     </div>
 
                     <div>
-                      <label className="text-sm text-gray-600 mb-2 block">
+                      <label
+                        htmlFor="feedback-textarea"
+                        className="text-sm text-gray-600 mb-2 block"
+                      >
                         Additional feedback
                       </label>
                       <Textarea
+                        id="feedback-textarea"
                         placeholder="Any specific changes you'd like to see?"
                         value={feedback}
                         onChange={(e) => setFeedback(e.target.value)}
@@ -388,10 +487,20 @@ export default function GeneratePage() {
 
                     <Button
                       onClick={handleRegenerate}
+                      disabled={isGeneratingImages}
                       className="w-full bg-gradient-to-r from-orange-500 to-purple-600 hover:from-orange-600 hover:to-purple-700 text-white"
                     >
-                      Regenerate with Changes
-                      <Sparkles className="ml-2 w-4 h-4" />
+                      {isGeneratingImages ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          Regenerate with Changes
+                          <Sparkles className="ml-2 w-4 h-4" />
+                        </>
+                      )}
                     </Button>
                   </div>
                 </CardContent>
@@ -427,6 +536,16 @@ export default function GeneratePage() {
                         conversion.
                       </p>
                     </div>
+
+                    {generatedImages.some((img) => img.isMock) && (
+                      <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-100">
+                        <p className="text-sm text-yellow-800">
+                          <span className="font-medium">⚠️ Note:</span> Using
+                          demo images. Configure Google Cloud credentials for
+                          actual AI-generated images.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
