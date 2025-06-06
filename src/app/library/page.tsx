@@ -95,7 +95,7 @@ export default function LibraryPage() {
         id: Math.max(...creatives.map((c) => c.id)) + 1,
         title: `${creativeToDuplicate.title} (Copy)`,
         dateCreated: new Date().toISOString().split("T")[0],
-      };
+      } as typeof creativeToDuplicate;
       setCreatives([...creatives, newCreative]);
     }
   };
