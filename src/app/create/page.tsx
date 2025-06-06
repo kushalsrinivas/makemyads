@@ -3,6 +3,7 @@
 import type React from "react";
 
 import { useState, useEffect } from "react";
+import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -128,6 +129,21 @@ export default function CreatePage() {
   >([]);
   const [isUploading, setIsUploading] = useState(false);
 
+  // AI prompt generation
+  const generatePrompt = api.ai.generatePrompt.useMutation({
+    onSuccess: (data) => {
+      // Store the generated prompt in localStorage for the generate page
+      localStorage.setItem("generatedPrompt", JSON.stringify(data));
+      // Navigate to generate page
+      window.location.href = "/generate";
+    },
+    onError: (error) => {
+      console.error("Failed to generate prompt:", error);
+      // Still navigate to generate page even if prompt generation fails
+      window.location.href = "/generate";
+    },
+  });
+
   // Load saved data from localStorage on mount
   useEffect(() => {
     const savedData = localStorage.getItem("adCreationData");
@@ -227,8 +243,20 @@ export default function CreatePage() {
     if (currentStep < steps.length) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Navigate to generate page with all the data
-      window.location.href = "/generate";
+      // Generate AI prompt with all the collected data
+      const promptData = {
+        productName,
+        productDescription,
+        theme: selectedTheme,
+        tone: selectedTone,
+        template: selectedTemplate,
+        customTheme: selectedTheme === "Custom" ? customTheme : undefined,
+        customTone: selectedTone === "Custom" ? customTone : undefined,
+        customTemplate:
+          selectedTemplate === "Custom" ? customTemplate : undefined,
+      };
+
+      generatePrompt.mutate(promptData);
     }
   };
 
@@ -716,14 +744,21 @@ export default function CreatePage() {
 
             <Button
               onClick={handleNext}
-              disabled={!canProceed()}
+              disabled={!canProceed() || generatePrompt.isPending}
               className="bg-gradient-to-r from-orange-500 to-purple-600 hover:from-orange-600 hover:to-purple-700 text-white px-8"
             >
               {currentStep === steps.length ? (
-                <>
-                  Generate Ad
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </>
+                generatePrompt.isPending ? (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    Generate Ad
+                    <ArrowRight className="ml-2 w-4 h-4" />
+                  </>
+                )
               ) : (
                 <>
                   Continue

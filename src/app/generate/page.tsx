@@ -14,6 +14,8 @@ import {
   ArrowLeft,
   ImageIcon,
   Check,
+  Copy,
+  CheckCircle,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -35,14 +37,54 @@ export default function GeneratePage() {
   const [feedback, setFeedback] = useState("");
   const [toneSlider, setToneSlider] = useState([50]);
   const [isSaved, setIsSaved] = useState(false);
+  const [generatedPromptData, setGeneratedPromptData] = useState<{
+    finalPrompt: string;
+    promptBreakdown: {
+      product: string;
+      description: string;
+      themeUsed: string;
+      toneUsed: string;
+      templateUsed: string;
+    };
+    aiSettings: {
+      aspectRatio: string;
+      style: string;
+      resolution: string;
+      quality: string;
+      optimization: string;
+    };
+  } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    // Load generated prompt data from localStorage
+    const promptData = localStorage.getItem("generatedPrompt");
+    if (promptData) {
+      try {
+        setGeneratedPromptData(JSON.parse(promptData));
+      } catch (error) {
+        console.error("Failed to parse generated prompt data:", error);
+      }
+    }
+
     // Simulate generation time
     const timer = setTimeout(() => {
       setIsGenerating(false);
     }, 3000);
     return () => clearTimeout(timer);
   }, []);
+
+  const handleCopyPrompt = async () => {
+    if (generatedPromptData?.finalPrompt) {
+      try {
+        await navigator.clipboard.writeText(generatedPromptData.finalPrompt);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (error) {
+        console.error("Failed to copy prompt:", error);
+      }
+    }
+  };
 
   const handleRegenerate = () => {
     setIsGenerating(true);
@@ -231,9 +273,9 @@ export default function GeneratePage() {
                       Tags
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {mockCreative.tags.map((tag, index) => (
+                      {mockCreative.tags.map((tag) => (
                         <Badge
-                          key={index}
+                          key={tag}
                           variant="outline"
                           className="bg-white/50"
                         >
@@ -251,6 +293,53 @@ export default function GeneratePage() {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* Prompt Used Section */}
+            {generatedPromptData?.finalPrompt && (
+              <Card className="bg-white/60 backdrop-blur-sm border-white/20 shadow-xl">
+                <CardContent className="p-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      AI Prompt Used
+                    </h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyPrompt}
+                      className="flex items-center space-x-2"
+                    >
+                      {copied ? (
+                        <>
+                          <CheckCircle className="w-4 h-4" />
+                          <span>Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4" />
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <div className="bg-gray-100 rounded-lg p-4 border">
+                    <Textarea
+                      value={generatedPromptData.finalPrompt}
+                      readOnly
+                      className="min-h-[150px] resize-none bg-transparent border-0 font-mono text-sm leading-relaxed focus:ring-0 focus:outline-none p-0"
+                      style={{
+                        fontFamily:
+                          'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    This is the exact prompt used to generate your ad creative.
+                    You can copy it to use with other AI tools like Midjourney,
+                    DALL-E, or other image generators.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Right Panel - Feedback */}
             <div className="space-y-6">
